@@ -517,7 +517,12 @@ class Executor {
             // Read keyboard: EAX=key code, returns state in EAX
             const keyCode = this.cpu.getRegister('eax');
             if (keyCode >= 0 && keyCode < 256) {
-                this.cpu.setRegister('eax', this.keyboardState[keyCode]);
+                const state = this.keyboardState[keyCode];
+                this.cpu.setRegister('eax', state);
+                // Debug logging for important keys
+                if ([32, 37, 39].includes(keyCode)) {
+                    console.log(`INT 0x83: Reading key ${keyCode}, state=${state}`);
+                }
             } else {
                 this.cpu.setRegister('eax', 0);
             }
