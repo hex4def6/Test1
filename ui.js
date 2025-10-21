@@ -209,7 +209,7 @@ exit_test:
     }
 
     loadBrickBreaker() {
-        const game = `; Brick Breaker Game
+        const game = `; Brick Breaker Game - Optimized with Memory-Mapped Graphics
 ; LEFT (37) and RIGHT (39) arrows = move paddle
 ; SPACE (32) = launch ball
 ; Destroy all bricks to win!
@@ -222,14 +222,14 @@ exit_test:
 ; 0x1010: Paddle X position
 ; 0x1014: Ball launched flag (0=not launched, 1=launched)
 ; 0x1020-0x107F: Brick states (1=active, 0=destroyed)
+; 0xA0000: Display buffer (128x128, pixel at y*128+x)
 
 ; Initialize game
 call init_game
 
 game_loop:
-    ; Clear screen (black)
-    mov ecx, 0
-    int 0x82
+    ; Clear screen using memory fill
+    call clear_screen
 
     ; Handle input
     call handle_input
@@ -244,6 +244,18 @@ game_loop:
 
     ; Continue game loop (JavaScript controls frame rate)
     jmp game_loop
+
+; Fast clear screen - fills display buffer with black
+clear_screen:
+    mov edi, 0xA0000        ; Display buffer start
+    mov ecx, 16384          ; 128*128 pixels
+    clear_loop:
+        mov byte [edi], 0   ; Black
+        inc edi
+        dec ecx
+        cmp ecx, 0
+        jne clear_loop
+    ret
 
 ; Initialize game state
 init_game:
@@ -449,7 +461,7 @@ update_ball:
     update_done:
     ret
 
-; Draw bricks (6 rows x 8 columns) - simplified version
+; Draw bricks (6 rows x 8 columns) - memory-mapped for speed
 draw_bricks:
     mov edi, 0              ; Brick index
     mov esi, 0x1020         ; Brick array
@@ -460,21 +472,41 @@ draw_bricks:
         cmp al, 0
         je skip_brick
 
-        ; Calculate brick position (just draw 1 pixel per brick for now)
+        ; Calculate brick position
         mov eax, edi
         mov ebx, 8
         xor edx, edx
         div ebx                 ; EAX = row, EDX = col
 
         ; Position: x = col * 16, y = row * 8
-        shl edx, 4              ; col * 16
-        shl eax, 3              ; row * 8
+        shl edx, 4              ; EDX = x = col * 16
+        shl eax, 3              ; EAX = y = row * 8
 
-        ; Draw single pixel for brick (much faster)
-        mov ebx, eax            ; y
-        mov eax, edx            ; x
-        mov ecx, 2              ; Red
-        int 0x81
+        ; Draw filled 14x7 brick directly to display memory
+        mov [0x3000], edx       ; Save brick X
+        mov [0x3004], eax       ; Save brick Y
+
+        mov ebx, 0              ; Y offset
+        brick_y_loop:
+            mov ecx, 0          ; X offset
+            brick_x_loop:
+                ; Calculate display address: 0xA0000 + (y+ebx)*128 + (x+ecx)
+                mov eax, [0x3004]   ; Get brick Y
+                add eax, ebx        ; Add Y offset
+                shl eax, 7          ; Multiply by 128 (y * 128)
+                add eax, [0x3000]   ; Add brick X
+                add eax, ecx        ; Add X offset
+                add eax, 0xA0000    ; Add display base
+
+                mov byte [eax], 2   ; Red color
+
+                inc ecx
+                cmp ecx, 14
+                jl brick_x_loop
+
+            inc ebx
+            cmp ebx, 7
+            jl brick_y_loop
 
     skip_brick:
         inc esi
@@ -484,31 +516,66 @@ draw_bricks:
 
     ret
 
-; Draw paddle - simplified
+; Draw paddle - memory-mapped 20x3 bar
 draw_paddle:
     mov eax, [0x1010]       ; Paddle X
     mov ebx, 120            ; Paddle Y
-    mov ecx, 1              ; White
 
-    ; Draw paddle as line of pixels
-    mov edi, 0
-    paddle_loop:
-        push eax
-        add eax, edi
-        int 0x81
-        pop eax
+    ; Draw 20x3 paddle
+    mov edi, 0              ; Y offset
+    paddle_y_loop:
+        mov esi, 0          ; X offset
+        paddle_x_loop:
+            ; Calculate address: 0xA0000 + (y+edi)*128 + (x+esi)
+            push eax
+            mov eax, ebx
+            add eax, edi    ; Y + offset
+            shl eax, 7      ; * 128
+            add eax, [0x1010]
+            add eax, esi    ; + X offset
+            add eax, 0xA0000
+            mov byte [eax], 1  ; White
+            pop eax
+
+            inc esi
+            cmp esi, 20
+            jl paddle_x_loop
+
         inc edi
-        cmp edi, 20
-        jl paddle_loop
+        cmp edi, 3
+        jl paddle_y_loop
 
     ret
 
-; Draw ball - simplified to single pixel
+; Draw ball - 3x3 pixels
 draw_ball:
-    mov eax, [0x1000]
-    mov ebx, [0x1004]
-    mov ecx, 5              ; Yellow
-    int 0x81
+    mov eax, [0x1000]       ; Ball X
+    mov ebx, [0x1004]       ; Ball Y
+
+    ; Draw 3x3 ball
+    mov edi, -1             ; Y offset start at -1
+    ball_y_loop:
+        mov esi, -1         ; X offset start at -1
+        ball_x_loop:
+            ; Calculate address: 0xA0000 + (y+edi)*128 + (x+esi)
+            push eax
+            mov eax, ebx
+            add eax, edi    ; Y + offset
+            shl eax, 7      ; * 128
+            add eax, [0x1000]
+            add eax, esi    ; + X offset
+            add eax, 0xA0000
+            mov byte [eax], 5  ; Yellow
+            pop eax
+
+            inc esi
+            cmp esi, 2
+            jl ball_x_loop
+
+        inc edi
+        cmp edi, 2
+        jl ball_y_loop
+
     ret
 `;
         this.codeEditor.value = game;
@@ -699,7 +766,11 @@ draw_ball:
     }
 
     updateGraphicsDisplay() {
-        if (!this.interpreter.executor.displayDirty) return;
+        // Check both executor and memory displayDirty flags
+        const executorDirty = this.interpreter.executor.displayDirty;
+        const memoryDirty = this.interpreter.memory.displayDirty;
+
+        if (!executorDirty && !memoryDirty) return;
 
         const display = this.interpreter.executor.display;
         const imageData = this.displayImageData;
@@ -740,6 +811,7 @@ draw_ball:
 
         this.displayCtx.putImageData(imageData, 0, 0);
         this.interpreter.executor.displayDirty = false;
+        this.interpreter.memory.displayDirty = false;
     }
 
     updateRegistersDisplay() {

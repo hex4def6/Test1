@@ -2,13 +2,27 @@ class Memory {
     constructor(size = 0x10000) { // 64KB default
         this.size = size;
         this.data = new Uint8Array(size);
+        this.displayBuffer = null; // Will be set by executor
+        this.displayBufferStart = 0xA0000; // VGA-style memory mapped display
+        this.displayBufferSize = 128 * 128; // 16,384 bytes
     }
 
     reset() {
         this.data.fill(0);
     }
 
+    setDisplayBuffer(displayBuffer) {
+        this.displayBuffer = displayBuffer;
+    }
+
     readByte(address) {
+        // Check if reading from display buffer
+        if (this.displayBuffer && address >= this.displayBufferStart &&
+            address < this.displayBufferStart + this.displayBufferSize) {
+            const offset = address - this.displayBufferStart;
+            return this.displayBuffer[offset];
+        }
+
         if (address < 0 || address >= this.size) {
             throw new Error(`Memory access violation at address 0x${address.toString(16)}`);
         }
@@ -16,6 +30,15 @@ class Memory {
     }
 
     writeByte(address, value) {
+        // Check if writing to display buffer (memory-mapped graphics at 0xA0000)
+        if (this.displayBuffer && address >= this.displayBufferStart &&
+            address < this.displayBufferStart + this.displayBufferSize) {
+            const offset = address - this.displayBufferStart;
+            this.displayBuffer[offset] = value & 0xFF;
+            this.displayDirty = true; // Mark display as needing update
+            return; // Don't write to regular memory
+        }
+
         if (address < 0 || address >= this.size) {
             throw new Error(`Memory access violation at address 0x${address.toString(16)}`);
         }

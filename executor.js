@@ -7,6 +7,9 @@ class Executor {
         this.display = new Uint8Array(128 * 128); // 128x128 pixel display
         this.displayDirty = false;
         this.keyboardState = new Uint8Array(256); // Keyboard state buffer
+
+        // Set up memory-mapped display buffer at 0xA0000
+        this.memory.setDisplayBuffer(this.display);
     }
 
     reset() {
