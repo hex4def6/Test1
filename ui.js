@@ -216,9 +216,9 @@ exit_test:
 
     loadBrickBreaker() {
         const game = `; Brick Breaker Game
-; Use LEFT (37) and RIGHT (39) arrow keys to move paddle
-; Ball bounces off walls, paddle, and bricks
-; Remove all bricks to win!
+; LEFT (37) and RIGHT (39) arrows = move paddle
+; SPACE (32) = launch ball
+; Destroy all bricks to win!
 
 ; Memory layout:
 ; 0x1000: Ball X position
@@ -226,6 +226,7 @@ exit_test:
 ; 0x1008: Ball X velocity
 ; 0x100C: Ball Y velocity
 ; 0x1010: Paddle X position
+; 0x1014: Ball launched flag (0=not launched, 1=launched)
 ; 0x1020-0x107F: Brick states (1=active, 0=destroyed)
 
 ; Initialize game
@@ -248,7 +249,7 @@ game_loop:
     call draw_ball
 
     ; Small delay loop
-    mov ecx, 5000
+    mov ecx, 3000
     delay:
         dec ecx
         cmp ecx, 0
@@ -259,14 +260,15 @@ game_loop:
 
 ; Initialize game state
 init_game:
-    ; Ball position (center)
-    mov dword [0x1000], 64  ; Ball X
-    mov dword [0x1004], 64  ; Ball Y
-    mov dword [0x1008], 1   ; Ball velocity X
-    mov dword [0x100C], 2   ; Ball velocity Y
-
     ; Paddle position (center bottom)
     mov dword [0x1010], 54  ; Paddle X
+
+    ; Ball starts on paddle (not launched)
+    mov dword [0x1000], 64  ; Ball X (on paddle)
+    mov dword [0x1004], 115 ; Ball Y (on paddle)
+    mov dword [0x1008], 0   ; Ball velocity X (not moving)
+    mov dword [0x100C], 0   ; Ball velocity Y (not moving)
+    mov dword [0x1014], 0   ; Not launched
 
     ; Initialize bricks (6 rows, 8 columns)
     mov esi, 0x1020         ; Brick array
@@ -290,7 +292,7 @@ handle_input:
 
     ; Move paddle left
     mov eax, [0x1010]
-    sub eax, 3
+    sub eax, 4
     cmp eax, 0
     jl skip_left
     mov [0x1010], eax
@@ -301,21 +303,51 @@ handle_input:
     mov eax, 39
     int 0x83
     cmp eax, 1
-    jne input_done
+    jne check_space
 
     ; Move paddle right
     mov eax, [0x1010]
-    add eax, 3
+    add eax, 4
     cmp eax, 108
     jg skip_right
     mov [0x1010], eax
     skip_right:
+
+    check_space:
+    ; Check space (32) to launch ball
+    mov eax, 32
+    int 0x83
+    cmp eax, 1
+    jne input_done
+
+    ; Only launch if not already launched
+    mov eax, [0x1014]
+    cmp eax, 1
+    je input_done
+
+    ; Launch ball!
+    mov dword [0x1014], 1   ; Mark as launched
+    mov dword [0x1008], 2   ; X velocity
+    mov dword [0x100C], -3  ; Y velocity (up)
 
     input_done:
     ret
 
 ; Update ball position and check collisions
 update_ball:
+    ; Check if ball is launched
+    mov eax, [0x1014]
+    cmp eax, 0
+    jne ball_is_launched
+
+    ; Ball not launched - stick to paddle
+    mov eax, [0x1010]
+    add eax, 10         ; Center of paddle (paddle is 20 wide)
+    mov [0x1000], eax   ; Ball X = paddle center
+    mov dword [0x1004], 115  ; Ball Y = on top of paddle
+    jmp update_done
+
+    ball_is_launched:
     ; Update X position
     mov eax, [0x1000]
     add eax, [0x1008]
@@ -544,7 +576,7 @@ draw_ball:
     ret
 `;
         this.codeEditor.value = game;
-        this.updateStatus('Brick Breaker game loaded! Use arrow keys to play.', 'success');
+        this.updateStatus('Brick Breaker loaded! Arrow keys = move, SPACE = launch ball', 'success');
     }
 
     clear() {
