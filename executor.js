@@ -21,6 +21,10 @@ class Executor {
     setKeyState(keyCode, pressed) {
         if (keyCode >= 0 && keyCode < 256) {
             this.keyboardState[keyCode] = pressed ? 1 : 0;
+            // Debug: log key state changes for game keys
+            if ([32, 37, 39].includes(keyCode)) {
+                console.log(`setKeyState: key ${keyCode} set to ${pressed ? 1 : 0}`);
+            }
             // Also write to memory at 0xF000 for direct access
             this.memory.writeByte(0xF000 + keyCode, pressed ? 1 : 0);
         }
@@ -520,9 +524,9 @@ class Executor {
             if (keyCode >= 0 && keyCode < 256) {
                 const state = this.keyboardState[keyCode];
                 this.cpu.setRegister('eax', state);
-                // Only log when a key is actually pressed (state=1)
-                if (state === 1) {
-                    console.log(`INT 0x83: Key ${keyCode} PRESSED!`);
+                // Debug: log arrow keys and space to see what's happening
+                if ([32, 37, 39].includes(keyCode)) {
+                    console.log(`INT 0x83: Checking key ${keyCode}, state=${state}, actual array value=${this.keyboardState[keyCode]}`);
                 }
             } else {
                 this.cpu.setRegister('eax', 0);
