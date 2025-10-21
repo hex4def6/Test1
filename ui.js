@@ -53,6 +53,7 @@ class UI {
                 e.preventDefault();
             }
             this.interpreter.executor.setKeyState(e.keyCode, true);
+            console.log('Key down:', e.keyCode, 'State:', this.interpreter.executor.keyboardState[e.keyCode]);
         });
 
         document.addEventListener('keyup', (e) => {
@@ -60,40 +61,157 @@ class UI {
                 e.preventDefault();
             }
             this.interpreter.executor.setKeyState(e.keyCode, false);
+            console.log('Key up:', e.keyCode, 'State:', this.interpreter.executor.keyboardState[e.keyCode]);
         });
     }
 
     loadExample() {
-        const example = `; Example: Factorial calculation with output
-; Calculate 5! and output the result
+        const example = `; Keyboard Test - Press arrow keys and see their state
+; Press ESC (27) to exit
 
-mov ecx, 5        ; n = 5
-mov eax, 1        ; result = 1
+; Clear screen
+mov ecx, 0
+int 0x82
 
-factorial:
-cmp ecx, 1        ; if (n <= 1)
-jle done          ; goto done
-mul eax, ecx      ; result *= n
-dec ecx           ; n--
-jmp factorial     ; loop
+test_loop:
+    ; Clear screen each frame
+    mov ecx, 0
+    int 0x82
 
-done:
-; Output the result (120)
-mov ebx, eax      ; move result to ebx
-mov eax, 1        ; syscall 1 = output
-int 0x80          ; output result
+    ; Draw title
+    mov eax, 10
+    mov ebx, 10
+    mov ecx, 1
+    int 0x81
 
-; Also output some other values
-mov ebx, 999      ; output 999
-int 0x80
+    ; Check LEFT arrow (37)
+    mov eax, 37
+    int 0x83
+    cmp eax, 1
+    jne check_right
 
-mov ebx, 42       ; output 42
-int 0x80
+    ; Draw LEFT indicator (white square at left)
+    mov eax, 10
+    mov ebx, 50
+    mov ecx, 1
+    int 0x81
+    mov eax, 11
+    int 0x81
+    mov eax, 12
+    int 0x81
+    mov eax, 13
+    int 0x81
+    mov eax, 14
+    int 0x81
 
-hlt               ; halt
+check_right:
+    ; Check RIGHT arrow (39)
+    mov eax, 39
+    int 0x83
+    cmp eax, 1
+    jne check_up
+
+    ; Draw RIGHT indicator (white square at right)
+    mov eax, 110
+    mov ebx, 50
+    mov ecx, 1
+    int 0x81
+    mov eax, 111
+    int 0x81
+    mov eax, 112
+    int 0x81
+    mov eax, 113
+    int 0x81
+    mov eax, 114
+    int 0x81
+
+check_up:
+    ; Check UP arrow (38)
+    mov eax, 38
+    int 0x83
+    cmp eax, 1
+    jne check_down
+
+    ; Draw UP indicator (white square at top)
+    mov eax, 60
+    mov ebx, 10
+    mov ecx, 1
+    int 0x81
+    mov ebx, 11
+    int 0x81
+    mov ebx, 12
+    int 0x81
+    mov ebx, 13
+    int 0x81
+    mov ebx, 14
+    int 0x81
+
+check_down:
+    ; Check DOWN arrow (40)
+    mov eax, 40
+    int 0x83
+    cmp eax, 1
+    jne check_space
+
+    ; Draw DOWN indicator (white square at bottom)
+    mov eax, 60
+    mov ebx, 110
+    mov ecx, 1
+    int 0x81
+    mov ebx, 111
+    int 0x81
+    mov ebx, 112
+    int 0x81
+    mov ebx, 113
+    int 0x81
+    mov ebx, 114
+    int 0x81
+
+check_space:
+    ; Check SPACE (32)
+    mov eax, 32
+    int 0x83
+    cmp eax, 1
+    jne check_esc
+
+    ; Draw SPACE indicator (white square in center)
+    mov eax, 60
+    mov ebx, 60
+    mov ecx, 5  ; Yellow
+    int 0x81
+    mov eax, 61
+    int 0x81
+    mov eax, 62
+    int 0x81
+    mov ebx, 61
+    mov eax, 60
+    int 0x81
+    mov eax, 61
+    int 0x81
+    mov eax, 62
+    int 0x81
+
+check_esc:
+    ; Check ESC (27) to exit
+    mov eax, 27
+    int 0x83
+    cmp eax, 1
+    je exit_test
+
+    ; Small delay
+    mov ecx, 3000
+    delay:
+        dec ecx
+        cmp ecx, 0
+        jne delay
+
+    jmp test_loop
+
+exit_test:
+    hlt
 `;
         this.codeEditor.value = example;
-        this.updateStatus('Example loaded', 'info');
+        this.updateStatus('Keyboard test loaded! Press arrow keys, space, or ESC', 'info');
     }
 
     loadBrickBreaker() {
