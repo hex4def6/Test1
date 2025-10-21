@@ -5,7 +5,6 @@ class UI {
         this.previousState = null;
         this.running = false;
         this.animationFrameId = null;
-        this.lastFrameTime = 0;
         this.frameInterval = 100; // 10fps = 100ms between frames
         this.initializeElements();
         this.attachEventListeners();
@@ -199,13 +198,7 @@ check_esc:
     cmp eax, 1
     je exit_test
 
-    ; Small delay
-    mov ecx, 3000
-    delay:
-        dec ecx
-        cmp ecx, 0
-        jne delay
-
+    ; Loop continues (JavaScript controls frame rate)
     jmp test_loop
 
 exit_test:
@@ -249,14 +242,7 @@ game_loop:
     call draw_paddle
     call draw_ball
 
-    ; Small delay loop
-    mov ecx, 3000
-    delay:
-        dec ecx
-        cmp ecx, 0
-        jne delay
-
-    ; Continue game loop
+    ; Continue game loop (JavaScript controls frame rate)
     jmp game_loop
 
 ; Initialize game state
@@ -651,18 +637,6 @@ draw_ball:
     runGameLoop() {
         if (!this.running) return;
 
-        const currentTime = performance.now();
-        const timeSinceLastFrame = currentTime - this.lastFrameTime;
-
-        // Limit to 10fps (100ms between frames)
-        if (timeSinceLastFrame < this.frameInterval) {
-            // Not enough time has passed, schedule next check
-            this.animationFrameId = requestAnimationFrame(() => this.runGameLoop());
-            return;
-        }
-
-        this.lastFrameTime = currentTime;
-
         try {
             // Execute a batch of instructions per frame (for smooth gameplay)
             for (let i = 0; i < 500; i++) {
@@ -680,11 +654,12 @@ draw_ball:
                 }
             }
 
-            // Update display
-            this.updateDisplay();
+            // Update only the graphics display (lightweight)
+            this.updateGraphicsDisplay();
+            this.updateStepCounter();
 
-            // Continue loop
-            this.animationFrameId = requestAnimationFrame(() => this.runGameLoop());
+            // Schedule next frame using setTimeout for precise timing control
+            this.animationFrameId = setTimeout(() => this.runGameLoop(), this.frameInterval);
         } catch (error) {
             this.updateStatus(`Error: ${error.message}`, 'error');
             console.error(error);
@@ -695,7 +670,7 @@ draw_ball:
     stopRunning() {
         this.running = false;
         if (this.animationFrameId) {
-            cancelAnimationFrame(this.animationFrameId);
+            clearTimeout(this.animationFrameId);
             this.animationFrameId = null;
         }
         this.runBtn.style.display = 'inline-block';
