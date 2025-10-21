@@ -471,12 +471,6 @@ class Executor {
     }
 
     execCall(operands, labels) {
-        // Debug: log CALL instructions to track control flow
-        const target = operands[0];
-        if (target.type === 'label') {
-            console.log(`CALL ${target.value} from instruction ${this.cpu.registers.eip}`);
-        }
-
         // Push return address (next instruction)
         this.memory.push(this.cpu, this.cpu.registers.eip + 1);
         return this.resolveJumpTarget(operands[0], labels);
@@ -485,17 +479,11 @@ class Executor {
     execRet() {
         // Pop return address
         const returnAddr = this.memory.pop(this.cpu);
-        console.log(`RET to instruction ${returnAddr}`);
         return returnAddr;
     }
 
     execInt(operands) {
         const intNum = this.getOperandValue(operands[0]);
-
-        // Debug: only log INT 0x83 to avoid spam from graphics interrupts
-        if (intNum === 0x83) {
-            console.log(`execInt called: INT 0x${intNum.toString(16)} (keyboard read)`);
-        }
 
         // Simple interrupt handling
         if (intNum === 0x80) {
@@ -532,11 +520,12 @@ class Executor {
             if (keyCode >= 0 && keyCode < 256) {
                 const state = this.keyboardState[keyCode];
                 this.cpu.setRegister('eax', state);
-                // Debug logging for ALL keyboard reads
-                console.log(`INT 0x83: Reading key ${keyCode}, state=${state}, keyboardState[${keyCode}]=${this.keyboardState[keyCode]}`);
+                // Only log when a key is actually pressed (state=1)
+                if (state === 1) {
+                    console.log(`INT 0x83: Key ${keyCode} PRESSED!`);
+                }
             } else {
                 this.cpu.setRegister('eax', 0);
-                console.log(`INT 0x83: Invalid key code ${keyCode}`);
             }
         }
     }

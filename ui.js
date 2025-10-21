@@ -55,7 +55,6 @@ class UI {
                 e.preventDefault();
             }
             this.interpreter.executor.setKeyState(e.keyCode, true);
-            console.log('Key down:', e.keyCode, 'State:', this.interpreter.executor.keyboardState[e.keyCode]);
         });
 
         document.addEventListener('keyup', (e) => {
@@ -63,7 +62,6 @@ class UI {
                 e.preventDefault();
             }
             this.interpreter.executor.setKeyState(e.keyCode, false);
-            console.log('Key up:', e.keyCode, 'State:', this.interpreter.executor.keyboardState[e.keyCode]);
         });
     }
 
