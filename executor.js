@@ -471,6 +471,12 @@ class Executor {
     }
 
     execCall(operands, labels) {
+        // Debug: log CALL instructions to track control flow
+        const target = operands[0];
+        if (target.type === 'label') {
+            console.log(`CALL ${target.value} from instruction ${this.cpu.registers.eip}`);
+        }
+
         // Push return address (next instruction)
         this.memory.push(this.cpu, this.cpu.registers.eip + 1);
         return this.resolveJumpTarget(operands[0], labels);
@@ -479,6 +485,7 @@ class Executor {
     execRet() {
         // Pop return address
         const returnAddr = this.memory.pop(this.cpu);
+        console.log(`RET to instruction ${returnAddr}`);
         return returnAddr;
     }
 
