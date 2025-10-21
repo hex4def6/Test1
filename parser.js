@@ -64,11 +64,20 @@ class Parser {
     parseOperand(operand) {
         operand = operand.trim();
 
+        // Remove size specifiers (byte, word, dword, qword)
+        let size = null;
+        const sizeMatch = operand.match(/^(byte|word|dword|qword)\s+(.+)$/i);
+        if (sizeMatch) {
+            size = sizeMatch[1].toLowerCase();
+            operand = sizeMatch[2].trim();
+        }
+
         // Check if it's a register
         if (this.isRegister(operand)) {
             return {
                 type: 'register',
-                value: operand.toLowerCase()
+                value: operand.toLowerCase(),
+                size
             };
         }
 
@@ -77,7 +86,8 @@ class Parser {
             const inner = operand.substring(1, operand.length - 1).trim();
             return {
                 type: 'memory',
-                value: this.parseMemoryOperand(inner)
+                value: this.parseMemoryOperand(inner),
+                size
             };
         }
 
@@ -85,7 +95,8 @@ class Parser {
         if (operand.match(/^0x[0-9a-f]+$/i)) {
             return {
                 type: 'immediate',
-                value: parseInt(operand, 16)
+                value: parseInt(operand, 16),
+                size
             };
         }
 
@@ -93,14 +104,16 @@ class Parser {
         if (operand.match(/^-?\d+$/)) {
             return {
                 type: 'immediate',
-                value: parseInt(operand, 10)
+                value: parseInt(operand, 10),
+                size
             };
         }
 
         // Otherwise, treat it as a label
         return {
             type: 'label',
-            value: operand
+            value: operand,
+            size
         };
     }
 

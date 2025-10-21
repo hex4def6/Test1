@@ -34,7 +34,7 @@ class Executor {
                 return operand.value;
 
             case 'memory':
-                return this.getMemoryValue(operand.value);
+                return this.getMemoryValue(operand.value, operand.size);
 
             case 'label':
                 throw new Error(`Label ${operand.value} not resolved`);
@@ -44,10 +44,18 @@ class Executor {
         }
     }
 
-    getMemoryValue(memOp) {
+    getMemoryValue(memOp, size) {
         const address = this.getMemoryAddress(memOp);
-        // For simplicity, assume 32-bit reads
-        return this.memory.readDWord(address);
+
+        // Determine size based on size specifier or default to 32-bit
+        if (size === 'byte') {
+            return this.memory.readByte(address);
+        } else if (size === 'word') {
+            return this.memory.readWord(address);
+        } else {
+            // dword or no size specified defaults to 32-bit
+            return this.memory.readDWord(address);
+        }
     }
 
     getMemoryAddress(memOp) {
@@ -75,7 +83,7 @@ class Executor {
                 break;
 
             case 'memory':
-                this.setMemoryValue(operand.value, value);
+                this.setMemoryValue(operand.value, value, operand.size);
                 break;
 
             default:
@@ -83,10 +91,18 @@ class Executor {
         }
     }
 
-    setMemoryValue(memOp, value) {
+    setMemoryValue(memOp, value, size) {
         const address = this.getMemoryAddress(memOp);
-        // For simplicity, assume 32-bit writes
-        this.memory.writeDWord(address, value);
+
+        // Determine size based on size specifier or default to 32-bit
+        if (size === 'byte') {
+            this.memory.writeByte(address, value);
+        } else if (size === 'word') {
+            this.memory.writeWord(address, value);
+        } else {
+            // dword or no size specified defaults to 32-bit
+            this.memory.writeDWord(address, value);
+        }
     }
 
     execute(instruction, labels = {}) {
