@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>x86 Assembly Interpreter</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>x86 Assembly Interpreter</h1>
+            <p class="subtitle">Browser-based x86 assembly code simulator</p>
+        </header>
+
+        <div class="main-content">
+            <div class="editor-section">
+                <div class="section-header">
+                    <h2>Assembly Code</h2>
+                    <div class="button-group">
+                        <button id="loadExample" class="btn btn-secondary">Load Example</button>
+                        <button id="clearBtn" class="btn btn-secondary">Clear</button>
+                    </div>
+                </div>
+                <textarea id="codeEditor" placeholder="Enter x86 assembly code here...
+Example:
+mov eax, 10
+mov ebx, 20
+add eax, ebx
+hlt"></textarea>
+
+                <div class="controls">
+                    <button id="runBtn" class="btn btn-primary">Run</button>
+                    <button id="stepBtn" class="btn btn-primary">Step</button>
+                    <button id="resetBtn" class="btn btn-warning">Reset</button>
+                </div>
+            </div>
+
+            <div class="state-section">
+                <div class="registers-panel">
+                    <h2>Registers</h2>
+                    <div class="registers-grid" id="registersGrid"></div>
+                </div>
+
+                <div class="flags-panel">
+                    <h2>Flags</h2>
+                    <div class="flags-grid" id="flagsGrid"></div>
+                </div>
+
+                <div class="output-panel">
+                    <h2>Output</h2>
+                    <div id="output" class="output-display"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="bottom-section">
+            <div class="memory-panel">
+                <div class="section-header">
+                    <h2>Memory View</h2>
+                    <div class="memory-controls">
+                        <label>
+                            Start Address:
+                            <input type="text" id="memoryStart" value="0x0000" class="memory-input">
+                        </label>
+                        <label>
+                            Length:
+                            <input type="number" id="memoryLength" value="64" class="memory-input" min="1" max="256">
+                        </label>
+                        <button id="refreshMemory" class="btn btn-small">Refresh</button>
+                    </div>
+                </div>
+                <div id="memoryDisplay" class="memory-display"></div>
+            </div>
+
+            <div class="instructions-panel">
+                <h2>Loaded Instructions</h2>
+                <div id="instructionsDisplay" class="instructions-display"></div>
+            </div>
+        </div>
+
+        <div class="status-bar">
+            <span id="statusMessage">Ready</span>
+            <span id="stepCounter">Steps: 0</span>
+        </div>
+    </div>
+
+    <script src="cpu.js"></script>
+    <script src="memory.js"></script>
+    <script src="parser.js"></script>
+    <script src="executor.js"></script>
+    <script src="interpreter.js"></script>
+    <script src="ui.js"></script>
+</body>
+</html>

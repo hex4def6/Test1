@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>x86 Interpreter Tests</title>
+    <style>
+        body {
+            font-family: monospace;
+            padding: 20px;
+            background: #f0f0f0;
+        }
+        .test {
+            background: white;
+            margin: 10px 0;
+            padding: 15px;
+            border-radius: 5px;
+        }
+        .test.pass {
+            border-left: 5px solid green;
+        }
+        .test.fail {
+            border-left: 5px solid red;
+        }
+        .test-name {
+            font-weight: bold;
+            font-size: 16px;
+        }
+        pre {
+            background: #f5f5f5;
+            padding: 10px;
+            border-radius: 3px;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>x86 Interpreter Test Suite</h1>
+    <div id="results"></div>
+
+    <script src="cpu.js"></script>
+    <script src="memory.js"></script>
+    <script src="parser.js"></script>
+    <script src="executor.js"></script>
+    <script src="interpreter.js"></script>
+
+    <script>
+        const results = document.getElementById('results');
+
+        function runTest(name, code, assertions) {
+            const div = document.createElement('div');
+            div.className = 'test';
+
+            const nameEl = document.createElement('div');
+            nameEl.className = 'test-name';
+            nameEl.textContent = name;
+            div.appendChild(nameEl);
+
+            const codeEl = document.createElement('pre');
+            codeEl.textContent = code;
+            div.appendChild(codeEl);
+
+            try {
+                const interpreter = new Interpreter();
+                interpreter.load(code);
+                interpreter.run();
+                const state = interpreter.getState();
+
+                const resultEl = document.createElement('div');
+                let allPassed = true;
+
+                for (const [key, expected] of Object.entries(assertions)) {
+                    let actual;
+                    if (key.startsWith('flag_')) {
+                        const flag = key.substring(5);
+                        actual = interpreter.cpu.flags[flag];
+                    } else {
+                        actual = interpreter.cpu.getRegister(key);
+                    }
+
+                    const passed = actual === expected;
+                    allPassed = allPassed && passed;
+
+                    const line = document.createElement('div');
+                    line.textContent = `${key}: ${actual} ${passed ? '✓' : '✗ (expected: ' + expected + ')'}`;
+                    line.style.color = passed ? 'green' : 'red';
+                    resultEl.appendChild(line);
+                }
+
+                div.appendChild(resultEl);
+                div.classList.add(allPassed ? 'pass' : 'fail');
+            } catch (error) {
+                const errorEl = document.createElement('div');
+                errorEl.textContent = 'Error: ' + error.message;
+                errorEl.style.color = 'red';
+                div.appendChild(errorEl);
+                div.classList.add('fail');
+            }
+
+            results.appendChild(div);
+        }
+
+        // Run tests
+        runTest('Simple MOV', `
+            mov eax, 42
+            hlt
+        `, { eax: 42 });
+
+        runTest('Addition', `
+            mov eax, 10
+            mov ebx, 20
+            add eax, ebx
+            hlt
+        `, { eax: 30, ebx: 20 });
+
+        runTest('Subtraction', `
+            mov eax, 50
+            mov ebx, 30
+            sub eax, ebx
+            hlt
+        `, { eax: 20 });
+
+        runTest('INC/DEC', `
+            mov eax, 5
+            inc eax
+            inc eax
+            dec eax
+            hlt
+        `, { eax: 6 });
+
+        runTest('AND Operation', `
+            mov eax, 0xFF
+            mov ebx, 0x0F
+            and eax, ebx
+            hlt
+        `, { eax: 0x0F });
+
+        runTest('OR Operation', `
+            mov eax, 0xF0
+            mov ebx, 0x0F
+            or eax, ebx
+            hlt
+        `, { eax: 0xFF });
+
+        runTest('XOR Operation', `
+            mov eax, 0xFF
+            xor eax, eax
+            hlt
+        `, { eax: 0, flag_zf: 1 });
+
+        runTest('Jump', `
+            mov eax, 1
+            jmp skip
+            mov eax, 2
+            skip:
+            mov ebx, 3
+            hlt
+        `, { eax: 1, ebx: 3 });
+
+        runTest('Conditional Jump (JE)', `
+            mov eax, 5
+            cmp eax, 5
+            je equal
+            mov eax, 0
+            equal:
+            mov ebx, 10
+            hlt
+        `, { eax: 5, ebx: 10, flag_zf: 1 });
+
+        runTest('Loop', `
+            mov ecx, 0
+            loop_start:
+            inc ecx
+            cmp ecx, 5
+            jl loop_start
+            hlt
+        `, { ecx: 5 });
+
+        runTest('Stack PUSH/POP', `
+            mov eax, 100
+            push eax
+            mov eax, 0
+            pop ebx
+            hlt
+        `, { eax: 0, ebx: 100 });
+
+        console.log('All tests completed!');
+    </script>
+</body>
+</html>
