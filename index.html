@@ -19,6 +19,7 @@
                     <h2>Assembly Code</h2>
                     <div class="button-group">
                         <button id="loadExample" class="btn btn-secondary">Load Example</button>
+                        <button id="loadGameBtn" class="btn btn-secondary">Load Brick Breaker</button>
                         <button id="clearBtn" class="btn btn-secondary">Clear</button>
                     </div>
                 </div>
@@ -33,6 +34,22 @@ hlt"></textarea>
                     <button id="runBtn" class="btn btn-primary">Run</button>
                     <button id="stepBtn" class="btn btn-primary">Step</button>
                     <button id="resetBtn" class="btn btn-warning">Reset</button>
+                </div>
+            </div>
+
+            <div class="display-section">
+                <h2>Display (128x128)</h2>
+                <div class="display-container">
+                    <canvas id="display" width="128" height="128"></canvas>
+                </div>
+                <div class="display-info">
+                    <p><strong>Graphics Controls:</strong></p>
+                    <ul>
+                        <li>INT 0x81: Set pixel (EAX=x, EBX=y, ECX=color)</li>
+                        <li>INT 0x82: Clear screen (ECX=color)</li>
+                        <li>INT 0x83: Read key (EAX=keycode, returns in EAX)</li>
+                    </ul>
+                    <p><strong>Arrow Keys:</strong> Left=37, Up=38, Right=39, Down=40, Space=32</p>
                 </div>
             </div>
 

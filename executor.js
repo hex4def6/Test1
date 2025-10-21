@@ -4,11 +4,25 @@ class Executor {
         this.memory = memory;
         this.halted = false;
         this.output = [];
+        this.display = new Uint8Array(128 * 128); // 128x128 pixel display
+        this.displayDirty = false;
+        this.keyboardState = new Uint8Array(256); // Keyboard state buffer
     }
 
     reset() {
         this.halted = false;
         this.output = [];
+        this.display.fill(0);
+        this.displayDirty = true;
+        this.keyboardState.fill(0);
+    }
+
+    setKeyState(keyCode, pressed) {
+        if (keyCode >= 0 && keyCode < 256) {
+            this.keyboardState[keyCode] = pressed ? 1 : 0;
+            // Also write to memory at 0xF000 for direct access
+            this.memory.writeByte(0xF000 + keyCode, pressed ? 1 : 0);
+        }
     }
 
     getOperandValue(operand) {
@@ -456,7 +470,7 @@ class Executor {
 
         // Simple interrupt handling
         if (intNum === 0x80) {
-            // Linux system call convention (simplified)
+            // Text output (original functionality)
             const syscall = this.cpu.getRegister('eax');
 
             if (syscall === 1) {
@@ -467,6 +481,29 @@ class Executor {
                 // sys_write with formatting
                 const value = this.cpu.getRegister('ebx');
                 this.output.push(String.fromCharCode(value));
+            }
+        } else if (intNum === 0x81) {
+            // Set pixel: EAX=x, EBX=y, ECX=color
+            const x = this.cpu.getRegister('eax');
+            const y = this.cpu.getRegister('ebx');
+            const color = this.cpu.getRegister('ecx');
+
+            if (x >= 0 && x < 128 && y >= 0 && y < 128) {
+                this.display[y * 128 + x] = color & 0xFF;
+                this.displayDirty = true;
+            }
+        } else if (intNum === 0x82) {
+            // Clear screen: ECX=color
+            const color = this.cpu.getRegister('ecx');
+            this.display.fill(color & 0xFF);
+            this.displayDirty = true;
+        } else if (intNum === 0x83) {
+            // Read keyboard: EAX=key code, returns state in EAX
+            const keyCode = this.cpu.getRegister('eax');
+            if (keyCode >= 0 && keyCode < 256) {
+                this.cpu.setRegister('eax', this.keyboardState[keyCode]);
+            } else {
+                this.cpu.setRegister('eax', 0);
             }
         }
     }

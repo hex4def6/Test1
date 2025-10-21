@@ -39,7 +39,7 @@ header h1 {
 
 .main-content {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: 1fr auto 1fr;
     gap: 20px;
     padding: 20px;
 }
@@ -133,6 +133,61 @@ header h1 {
 .btn-small {
     padding: 8px 16px;
     font-size: 12px;
+}
+
+.display-section {
+    background: #f8f9fa;
+    padding: 20px;
+    border-radius: 5px;
+    border: 1px solid #dee2e6;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.display-section h2 {
+    color: #2c3e50;
+    margin-bottom: 15px;
+    font-size: 1.2em;
+}
+
+.display-container {
+    background: #000;
+    padding: 10px;
+    border-radius: 5px;
+    margin-bottom: 15px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+#display {
+    display: block;
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
+    border: 2px solid #333;
+}
+
+.display-info {
+    background: white;
+    padding: 15px;
+    border-radius: 5px;
+    width: 100%;
+    font-size: 0.85em;
+}
+
+.display-info p {
+    margin-bottom: 8px;
+    color: #495057;
+}
+
+.display-info ul {
+    margin-left: 20px;
+    margin-bottom: 10px;
+    color: #6c757d;
+}
+
+.display-info li {
+    margin: 4px 0;
+    font-family: 'Courier New', monospace;
 }
 
 .state-section {

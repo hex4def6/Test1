@@ -8,7 +8,7 @@ class Interpreter {
         this.labels = {};
         this.currentInstruction = 0;
         this.executionLog = [];
-        this.maxSteps = 10000; // Prevent infinite loops
+        this.maxSteps = 1000000; // Allow for game loops
         this.stepCount = 0;
     }
 
