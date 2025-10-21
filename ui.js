@@ -68,6 +68,7 @@ class UI {
     loadExample() {
         const example = `; Keyboard Test - Press arrow keys and see their state
 ; Press ESC (27) to exit
+; Console will show INT 0x83 reads
 
 ; Clear screen
 mov ecx, 0
@@ -78,7 +79,7 @@ test_loop:
     mov ecx, 0
     int 0x82
 
-    ; Draw title
+    ; Draw title dot
     mov eax, 10
     mov ebx, 10
     mov ecx, 1

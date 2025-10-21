@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Keyboard Debug</title>
+</head>
+<body>
+    <h1>Keyboard State Debug</h1>
+    <p>Press keys and watch the console</p>
+    <div id="state"></div>
+
+    <script src="cpu.js"></script>
+    <script src="memory.js"></script>
+    <script src="parser.js"></script>
+    <script src="executor.js"></script>
+    <script src="interpreter.js"></script>
+
+    <script>
+        const interpreter = new Interpreter();
+
+        // Set up keyboard handlers
+        document.addEventListener('keydown', (e) => {
+            interpreter.executor.setKeyState(e.keyCode, true);
+            console.log('Keydown:', e.keyCode, 'State in array:', interpreter.executor.keyboardState[e.keyCode]);
+        });
+
+        document.addEventListener('keyup', (e) => {
+            interpreter.executor.setKeyState(e.keyCode, false);
+            console.log('Keyup:', e.keyCode, 'State in array:', interpreter.executor.keyboardState[e.keyCode]);
+        });
+
+        // Test program that reads keyboard
+        const testCode = `
+mov ecx, 0
+test_loop:
+    ; Check left arrow (37)
+    mov eax, 37
+    int 0x83
+    cmp eax, 1
+    jne test_loop
+
+    ; Left arrow pressed!
+    mov ebx, 1000
+    mov eax, 1
+    int 0x80
+
+    hlt
+`;
+
+        console.log('Loading test program...');
+        interpreter.load(testCode);
+        console.log('Instructions loaded:', interpreter.instructions.length);
+        console.log('Starting execution...');
+
+        // Run one step at a time with logging
+        let stepCount = 0;
+        function stepOnce() {
+            if (stepCount < 100) {  // Run max 100 steps
+                const result = interpreter.step();
+                const currentInstr = interpreter.instructions[interpreter.currentInstruction - 1];
+                if (currentInstr) {
+                    console.log(`Step ${stepCount}: ${currentInstr.raw}`);
+                }
+                stepCount++;
+                if (!result.done) {
+                    setTimeout(stepOnce, 100);  // Step every 100ms
+                } else {
+                    console.log('Program ended');
+                }
+            }
+        }
+
+        setTimeout(stepOnce, 1000);  // Start after 1 second
+    </script>
+</body>
+</html>
