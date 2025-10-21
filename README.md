@@ -2,6 +2,8 @@
 
 A browser-based x86 assembly interpreter that allows you to write, execute, and debug x86 assembly code directly in your web browser.
 
+**Note**: This is an educational tool designed for learning x86 assembly concepts. It implements a subset of x86 instructions and is not compatible with compiled binaries. See [COMPATIBILITY.md](COMPATIBILITY.md) for detailed information about what's supported and limitations.
+
 ## Features
 
 - **Full x86 Instruction Support**: Supports common x86 instructions including:
@@ -177,11 +179,19 @@ The interpreter consists of several modules:
 
 ## Limitations
 
-- Simplified implementation of some complex instructions
-- No segmentation or paging
-- Limited interrupt support
+This interpreter is an educational tool with several limitations compared to real x86:
+
+- Simplified implementation of some complex instructions (MUL, DIV)
+- Subset of x86 instruction set (~30 instructions vs. hundreds)
+- Only 4 CPU flags (ZF, SF, CF, OF) instead of full EFLAGS register
+- Simplified memory addressing (no segment registers, SIB bytes, etc.)
+- No binary compatibility - text assembly only
+- No floating-point or SIMD instructions
+- Limited interrupt support (custom INT 0x80 for output only)
 - Maximum execution steps limited to prevent infinite loops (10,000 steps)
 - Memory size limited to 64KB
+
+**For detailed compatibility information, see [COMPATIBILITY.md](COMPATIBILITY.md)**
 
 ## Browser Compatibility
 
