@@ -638,8 +638,9 @@ draw_ball:
         if (!this.running) return;
 
         try {
-            // Execute a batch of instructions per frame (for smooth gameplay)
-            for (let i = 0; i < 500; i++) {
+            // Execute a batch of instructions per frame
+            // (Brick breaker has ~1500 instructions per loop iteration)
+            for (let i = 0; i < 2000; i++) {
                 if (this.interpreter.isDone()) {
                     this.stopRunning();
                     this.updateStatus('Game ended', 'info');
