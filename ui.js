@@ -449,7 +449,7 @@ update_ball:
     update_done:
     ret
 
-; Draw bricks (6 rows x 8 columns)
+; Draw bricks (6 rows x 8 columns) - simplified version
 draw_bricks:
     mov edi, 0              ; Brick index
     mov esi, 0x1020         ; Brick array
@@ -460,46 +460,21 @@ draw_bricks:
         cmp al, 0
         je skip_brick
 
-        ; Calculate brick position
+        ; Calculate brick position (just draw 1 pixel per brick for now)
         mov eax, edi
         mov ebx, 8
         xor edx, edx
         div ebx                 ; EAX = row, EDX = col
 
-        ; Draw brick (8x8 pixels)
+        ; Position: x = col * 16, y = row * 8
         shl edx, 4              ; col * 16
         shl eax, 3              ; row * 8
 
-        ; Draw a filled rectangle
-        mov [0x2000], eax       ; Save row
-        mov [0x2004], edx       ; Save col
-
-        draw_brick_y:
-            mov edx, [0x2004]
-            draw_brick_x:
-                mov eax, edx
-                mov ebx, [0x2000]
-                mov ecx, 2          ; Red
-                int 0x81            ; Set pixel
-
-                inc edx
-                mov eax, [0x2004]
-                add eax, 14
-                cmp edx, eax
-                jl draw_brick_x
-
-            mov eax, [0x2000]
-            inc eax
-            mov [0x2000], eax
-            mov ebx, [0x2000]
-            sub ebx, eax
-            add ebx, eax
-            mov eax, ebx
-            shr eax, 3
-            shl eax, 3
-            add eax, 7
-            cmp ebx, eax
-            jl draw_brick_y
+        ; Draw single pixel for brick (much faster)
+        mov ebx, eax            ; y
+        mov eax, edx            ; x
+        mov ecx, 2              ; Red
+        int 0x81
 
     skip_brick:
         inc esi
@@ -509,57 +484,31 @@ draw_bricks:
 
     ret
 
-; Draw paddle
+; Draw paddle - simplified
 draw_paddle:
-    mov esi, [0x1010]       ; Paddle X
-    mov edi, 120            ; Paddle Y
+    mov eax, [0x1010]       ; Paddle X
+    mov ebx, 120            ; Paddle Y
+    mov ecx, 1              ; White
 
-    mov ecx, 0
+    ; Draw paddle as line of pixels
+    mov edi, 0
     paddle_loop:
-        mov eax, esi
-        add eax, ecx
-        mov ebx, edi
-        mov ecx, 1              ; White
+        push eax
+        add eax, edi
         int 0x81
-
-        mov ebx, edi
-        inc ebx
-        int 0x81
-
-        mov ebx, edi
-        add ebx, 2
-        int 0x81
-
-        mov ecx, ecx
-        inc ecx
-        cmp ecx, 20
+        pop eax
+        inc edi
+        cmp edi, 20
         jl paddle_loop
 
     ret
 
-; Draw ball
+; Draw ball - simplified to single pixel
 draw_ball:
     mov eax, [0x1000]
     mov ebx, [0x1004]
     mov ecx, 5              ; Yellow
     int 0x81
-
-    ; Draw 3x3 ball
-    dec eax
-    int 0x81
-    inc eax
-    inc eax
-    int 0x81
-    dec eax
-
-    dec ebx
-    int 0x81
-    dec eax
-    int 0x81
-    inc eax
-    inc eax
-    int 0x81
-
     ret
 `;
         this.codeEditor.value = game;
