@@ -571,7 +571,13 @@ draw_ball:
             this.updateInstructionsDisplay();
 
             // Check if this is a game loop (contains infinite loop)
-            if (code.includes('game_loop:') || code.includes('jmp game_loop')) {
+            // Look for common loop patterns: game_loop, test_loop, main_loop, or any jmp to earlier label
+            const hasGameLoop = code.includes('game_loop:') || code.includes('jmp game_loop') ||
+                               code.includes('test_loop:') || code.includes('jmp test_loop') ||
+                               code.includes('main_loop:') || code.includes('jmp main_loop') ||
+                               code.match(/jmp\s+\w+_loop/);  // any jmp to *_loop
+
+            if (hasGameLoop) {
                 // Run as continuous game loop
                 this.running = true;
                 this.runBtn.style.display = 'none';
