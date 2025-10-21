@@ -14,7 +14,8 @@ class Executor {
         this.output = [];
         this.display.fill(0);
         this.displayDirty = true;
-        this.keyboardState.fill(0);
+        // DON'T clear keyboard state - it's managed by event handlers
+        // this.keyboardState.fill(0);
     }
 
     setKeyState(keyCode, pressed) {
