@@ -637,9 +637,17 @@ draw_ball:
     runGameLoop() {
         if (!this.running) return;
 
+        // Debug: log every 10 frames to confirm loop is running
+        if (!this.frameCounter) this.frameCounter = 0;
+        this.frameCounter++;
+        if (this.frameCounter % 10 === 0) {
+            console.log(`Game loop frame ${this.frameCounter}, step count: ${this.interpreter.stepCount}`);
+        }
+
         try {
             // Execute a batch of instructions per frame
             // (Brick breaker has ~1500 instructions per loop iteration)
+            let instructionsExecuted = 0;
             for (let i = 0; i < 2000; i++) {
                 if (this.interpreter.isDone()) {
                     this.stopRunning();
@@ -648,11 +656,17 @@ draw_ball:
                 }
 
                 const result = this.interpreter.step();
+                instructionsExecuted++;
                 if (result.done) {
                     this.stopRunning();
                     this.updateStatus('Game ended', 'info');
                     return;
                 }
+            }
+
+            // Debug: log if we hit the instruction limit
+            if (this.frameCounter % 10 === 0) {
+                console.log(`  Executed ${instructionsExecuted} instructions this frame`);
             }
 
             // Update only the graphics display (lightweight)
