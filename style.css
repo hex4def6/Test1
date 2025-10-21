@@ -241,6 +241,27 @@ header h1 {
     font-weight: 600;
 }
 
+.register-value.editable {
+    background: transparent;
+    border: 1px solid transparent;
+    padding: 2px 4px;
+    border-radius: 3px;
+    transition: all 0.2s;
+    width: 90px;
+}
+
+.register-value.editable:hover {
+    border-color: #667eea;
+    background: #f8f9fa;
+}
+
+.register-value.editable:focus {
+    outline: none;
+    border-color: #667eea;
+    background: white;
+    box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.2);
+}
+
 .register-item.changed {
     background: #fff3cd;
     border-color: #ffc107;
@@ -382,6 +403,30 @@ header h1 {
 .memory-byte {
     color: #495057;
     min-width: 25px;
+    width: 30px;
+    text-align: center;
+}
+
+.memory-byte.editable {
+    background: transparent;
+    border: 1px solid transparent;
+    padding: 2px;
+    border-radius: 3px;
+    transition: all 0.2s;
+    font-family: 'Courier New', monospace;
+    font-size: 0.85em;
+}
+
+.memory-byte.editable:hover {
+    border-color: #667eea;
+    background: #f8f9fa;
+}
+
+.memory-byte.editable:focus {
+    outline: none;
+    border-color: #667eea;
+    background: white;
+    box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.2);
 }
 
 .memory-byte.zero {

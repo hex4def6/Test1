@@ -13,6 +13,7 @@ class UI {
     initializeElements() {
         this.codeEditor = document.getElementById('codeEditor');
         this.runBtn = document.getElementById('runBtn');
+        this.pauseBtn = document.getElementById('pauseBtn');
         this.stepBtn = document.getElementById('stepBtn');
         this.resetBtn = document.getElementById('resetBtn');
         this.loadExampleBtn = document.getElementById('loadExample');
@@ -37,6 +38,7 @@ class UI {
 
     attachEventListeners() {
         this.runBtn.addEventListener('click', () => this.run());
+        this.pauseBtn.addEventListener('click', () => this.pause());
         this.stepBtn.addEventListener('click', () => this.step());
         this.resetBtn.addEventListener('click', () => this.reset());
         this.loadExampleBtn.addEventListener('click', () => this.loadExample());
@@ -44,12 +46,19 @@ class UI {
         this.clearBtn.addEventListener('click', () => this.clear());
         this.refreshMemory.addEventListener('click', () => this.updateMemoryDisplay());
 
-        // Keyboard input
+        // Keyboard input - prevent default for arrow keys and space
         document.addEventListener('keydown', (e) => {
+            // Prevent default behavior for arrow keys and space (scrolling)
+            if ([32, 37, 38, 39, 40].includes(e.keyCode)) {
+                e.preventDefault();
+            }
             this.interpreter.executor.setKeyState(e.keyCode, true);
         });
 
         document.addEventListener('keyup', (e) => {
+            if ([32, 37, 38, 39, 40].includes(e.keyCode)) {
+                e.preventDefault();
+            }
             this.interpreter.executor.setKeyState(e.keyCode, false);
         });
     }
@@ -437,7 +446,6 @@ draw_ball:
             // Stop if already running
             if (this.running) {
                 this.stopRunning();
-                this.runBtn.textContent = 'Run';
                 return;
             }
 
@@ -448,9 +456,10 @@ draw_ball:
             if (code.includes('game_loop:') || code.includes('jmp game_loop')) {
                 // Run as continuous game loop
                 this.running = true;
-                this.runBtn.textContent = 'Stop';
+                this.runBtn.style.display = 'none';
+                this.pauseBtn.style.display = 'inline-block';
                 this.runGameLoop();
-                this.updateStatus('Game running... Click Stop to halt', 'success');
+                this.updateStatus('Game running... Click Pause to pause or Reset to stop', 'success');
             } else {
                 // Run normally
                 const result = this.interpreter.run();
@@ -461,6 +470,24 @@ draw_ball:
             this.updateStatus(`Error: ${error.message}`, 'error');
             console.error(error);
             this.stopRunning();
+        }
+    }
+
+    pause() {
+        if (this.running) {
+            this.running = false;
+            if (this.animationFrameId) {
+                cancelAnimationFrame(this.animationFrameId);
+                this.animationFrameId = null;
+            }
+            this.pauseBtn.textContent = 'Resume';
+            this.updateStatus('Game paused. Click Resume to continue', 'info');
+        } else {
+            // Resume
+            this.running = true;
+            this.pauseBtn.textContent = 'Pause';
+            this.runGameLoop();
+            this.updateStatus('Game resumed', 'success');
         }
     }
 
@@ -502,7 +529,9 @@ draw_ball:
             cancelAnimationFrame(this.animationFrameId);
             this.animationFrameId = null;
         }
-        this.runBtn.textContent = 'Run';
+        this.runBtn.style.display = 'inline-block';
+        this.pauseBtn.style.display = 'none';
+        this.pauseBtn.textContent = 'Pause';
     }
 
     step() {
@@ -624,9 +653,34 @@ draw_ball:
             name.className = 'register-name';
             name.textContent = reg.toUpperCase();
 
-            const value = document.createElement('span');
-            value.className = 'register-value';
-            value.textContent = '0x' + state.registers[reg].toString(16).toUpperCase().padStart(8, '0');
+            const value = document.createElement('input');
+            value.type = 'text';
+            value.className = 'register-value editable';
+            value.value = '0x' + state.registers[reg].toString(16).toUpperCase().padStart(8, '0');
+            value.dataset.register = reg;
+
+            // Edit register on blur
+            value.addEventListener('blur', (e) => {
+                try {
+                    const newValue = parseInt(e.target.value, 16);
+                    if (!isNaN(newValue)) {
+                        this.interpreter.cpu.setRegister(reg, newValue);
+                        this.updateDisplay();
+                    } else {
+                        e.target.value = '0x' + state.registers[reg].toString(16).toUpperCase().padStart(8, '0');
+                    }
+                } catch (error) {
+                    console.error('Error setting register:', error);
+                    e.target.value = '0x' + state.registers[reg].toString(16).toUpperCase().padStart(8, '0');
+                }
+            });
+
+            // Enter key also saves
+            value.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    e.target.blur();
+                }
+            });
 
             div.appendChild(name);
             div.appendChild(value);
@@ -692,15 +746,43 @@ draw_ball:
                 values.className = 'memory-values';
 
                 for (let j = 0; j < 16 && (i + j) < memoryView.length; j++) {
-                    const byte = document.createElement('span');
-                    byte.className = 'memory-byte';
+                    const byteAddress = memoryView[i + j].address;
                     const byteValue = memoryView[i + j].value;
+
+                    const byte = document.createElement('input');
+                    byte.type = 'text';
+                    byte.className = 'memory-byte editable';
+                    byte.maxLength = 2;
+                    byte.value = byteValue.toString(16).toUpperCase().padStart(2, '0');
+                    byte.dataset.address = byteAddress;
 
                     if (byteValue === 0) {
                         byte.classList.add('zero');
                     }
 
-                    byte.textContent = byteValue.toString(16).toUpperCase().padStart(2, '0');
+                    // Edit memory on blur
+                    byte.addEventListener('blur', (e) => {
+                        try {
+                            const newValue = parseInt(e.target.value, 16);
+                            if (!isNaN(newValue) && newValue >= 0 && newValue <= 255) {
+                                this.interpreter.memory.writeByte(byteAddress, newValue);
+                                this.updateMemoryDisplay();
+                            } else {
+                                e.target.value = byteValue.toString(16).toUpperCase().padStart(2, '0');
+                            }
+                        } catch (error) {
+                            console.error('Error setting memory:', error);
+                            e.target.value = byteValue.toString(16).toUpperCase().padStart(2, '0');
+                        }
+                    });
+
+                    // Enter key also saves
+                    byte.addEventListener('keydown', (e) => {
+                        if (e.key === 'Enter') {
+                            e.target.blur();
+                        }
+                    });
+
                     values.appendChild(byte);
                 }
 
