@@ -485,6 +485,11 @@ class Executor {
     execInt(operands) {
         const intNum = this.getOperandValue(operands[0]);
 
+        // Debug: only log INT 0x83 to avoid spam from graphics interrupts
+        if (intNum === 0x83) {
+            console.log(`execInt called: INT 0x${intNum.toString(16)} (keyboard read)`);
+        }
+
         // Simple interrupt handling
         if (intNum === 0x80) {
             // Text output (original functionality)
@@ -520,12 +525,11 @@ class Executor {
             if (keyCode >= 0 && keyCode < 256) {
                 const state = this.keyboardState[keyCode];
                 this.cpu.setRegister('eax', state);
-                // Debug logging for important keys
-                if ([32, 37, 39].includes(keyCode)) {
-                    console.log(`INT 0x83: Reading key ${keyCode}, state=${state}`);
-                }
+                // Debug logging for ALL keyboard reads
+                console.log(`INT 0x83: Reading key ${keyCode}, state=${state}, keyboardState[${keyCode}]=${this.keyboardState[keyCode]}`);
             } else {
                 this.cpu.setRegister('eax', 0);
+                console.log(`INT 0x83: Invalid key code ${keyCode}`);
             }
         }
     }
