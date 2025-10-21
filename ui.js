@@ -5,6 +5,8 @@ class UI {
         this.previousState = null;
         this.running = false;
         this.animationFrameId = null;
+        this.lastFrameTime = 0;
+        this.frameInterval = 100; // 10fps = 100ms between frames
         this.initializeElements();
         this.attachEventListeners();
         this.updateDisplay();
@@ -650,6 +652,18 @@ draw_ball:
 
     runGameLoop() {
         if (!this.running) return;
+
+        const currentTime = performance.now();
+        const timeSinceLastFrame = currentTime - this.lastFrameTime;
+
+        // Limit to 10fps (100ms between frames)
+        if (timeSinceLastFrame < this.frameInterval) {
+            // Not enough time has passed, schedule next check
+            this.animationFrameId = requestAnimationFrame(() => this.runGameLoop());
+            return;
+        }
+
+        this.lastFrameTime = currentTime;
 
         try {
             // Execute a batch of instructions per frame (for smooth gameplay)
