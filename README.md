@@ -59,9 +59,28 @@ add eax, ebx
 hlt
 ```
 
-### Factorial Calculation
+### Program with Output
 ```assembly
-; Calculate 5!
+; Calculate and output the sum of two numbers
+mov eax, 25
+mov ebx, 17
+add eax, ebx       ; eax = 42
+
+; Output the result
+mov ebx, eax       ; move result to ebx
+mov eax, 1         ; syscall 1 = output
+int 0x80           ; output 42
+
+; Output another value
+mov ebx, 100
+int 0x80           ; output 100
+
+hlt
+```
+
+### Factorial Calculation with Output
+```assembly
+; Calculate 5! and output the result
 mov ecx, 5        ; n = 5
 mov eax, 1        ; result = 1
 
@@ -73,6 +92,10 @@ dec ecx           ; n--
 jmp factorial     ; loop
 
 done:
+; Output the result (120)
+mov ebx, eax      ; move result to ebx
+mov eax, 1        ; syscall 1 = output
+int 0x80          ; output result
 hlt               ; halt
 ```
 
@@ -128,6 +151,16 @@ mov eax, 10  ; inline comment
 start:
     mov eax, 1
     jmp start
+```
+
+### Output (INT 0x80)
+To display values in the output section, use the INT 0x80 interrupt:
+```assembly
+; Set EAX = 1 for output syscall
+; Set EBX = value to output
+mov eax, 1
+mov ebx, 42
+int 0x80    ; outputs "42" to the output section
 ```
 
 ## Architecture

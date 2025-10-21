@@ -37,7 +37,9 @@ class UI {
     }
 
     loadExample() {
-        const example = `; Example: Factorial calculation
+        const example = `; Example: Factorial calculation with output
+; Calculate 5! and output the result
+
 mov ecx, 5        ; n = 5
 mov eax, 1        ; result = 1
 
@@ -49,6 +51,18 @@ dec ecx           ; n--
 jmp factorial     ; loop
 
 done:
+; Output the result (120)
+mov ebx, eax      ; move result to ebx
+mov eax, 1        ; syscall 1 = output
+int 0x80          ; output result
+
+; Also output some other values
+mov ebx, 999      ; output 999
+int 0x80
+
+mov ebx, 42       ; output 42
+int 0x80
+
 hlt               ; halt
 `;
         this.codeEditor.value = example;
